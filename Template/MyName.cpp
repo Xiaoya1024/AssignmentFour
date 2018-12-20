@@ -1,6 +1,11 @@
 #include "MyName.h"
+#include <gl\glut.h>
 MyName::MyName(void)
 {
+	int _point[23]={15,22,31,38,47,54,63,74,79,89,93,97,106,121,
+		129,137,146,161,174,188,202,208,214};
+	for(int i=0;i<23;i++)
+		point[i]=_point[i];
 }
 MyName::~MyName(void)
 {
@@ -28,7 +33,7 @@ void MyName::pointJi(){
 	for(float i=-0.2f;i<=0.2f;i+=0.05f){//第7画-9
 		Ji.push_back(Point(i,-0.4f));
 	}
-
+	JiNum=Ji.size();
 
 }
 void MyName::pointJiAll(){
@@ -100,6 +105,7 @@ void MyName::pointXiao(){
 	Xiao.push_back(Point(0.4f,-0.38f));
 	Xiao.push_back(Point(0.38f,-0.35f));
 	Xiao.push_back(Point(0.36f,-0.3f));
+	XiaoNum=Xiao.size();
 }
 void MyName::pointXiaoAll(){
 	for(unsigned int i=0;i<Xiao.size();i++){
@@ -132,12 +138,110 @@ void MyName::pointYa(){
 
 	for(float i=-0.4f;i<=0.4f;i+=0.05f)//第6画-17
 		Ya.push_back(Point(i,-0.4f));
+	YaNum=Ya.size();
 
 }
 void MyName::pointYaAll(){
 	for(unsigned int i=0;i<Ya.size();i++){
 		for(float k=-0.1f;k<=0.1f;k+=0.05f){
 			YaAll.push_back(Point(Ya[i].x,Ya[i].y,k));
+		}
+	}
+}
+void MyName::DrawName(int type){//type为0表示是圆圈模式，为1表示是三角面片模式
+	if(type==0){
+		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+		glColor3f(0.5,0.4,0.1);
+		for(int i=0;i<JiNum+XiaoNum+YaNum;i++){
+			glBegin(GL_LINE_STRIP);	
+			for(int j=0;j<CIRCLENUM;j++)
+				glVertex3fv(g_allPos[i*CIRCLENUM+j]);
+			glEnd();
+		}
+	}
+	else if(type==1){
+
+		CMatrix044 mat;
+		glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+		glBegin(GL_TRIANGLE_STRIP);
+		for(int i=0;i<JiNum+XiaoNum+YaNum-2;i++){
+			int flag=0;
+			for(int j=0;j<23;j++){
+				if(i==point[j]){
+					flag=1;
+					glEnd();
+					glColor4f(1,1,1,0.3);
+					glBegin(GL_TRIANGLE_STRIP);
+					break;
+				}
+			}
+			if(flag==0){
+				glColor3f(0.5,0.4,0.1);
+			}
+			for(int j=0;j<CIRCLENUM;j++){
+				int index1=i*CIRCLENUM+j;
+				int index2=index1+CIRCLENUM;
+				glVertex3fv(g_allPos[index1]);
+				glVertex3fv(g_allPos[index2]);
+			}
+		}
+		glEnd();
+	}
+}
+void MyName::InitName(){
+	pointJi();
+	pointXiao();
+	pointYa();
+	for(int i=0;i<CIRCLENUM;i++){
+		float angle=i*2*3.14/(CIRCLENUM-1);
+		g_circle[i].x=0;
+		g_circle[i].y=1.2f*cos(angle);
+		g_circle[i].z=1.2f*sin(angle);
+	}
+	int cnt=0;
+	int scale=25;
+	for(int i=0;i<JiNum;i++){
+		Ji[i].x-=1.0f;
+		g_pos[cnt].x=Ji[i].x*scale;
+		g_pos[cnt].y=Ji[i].y*scale;
+		g_pos[cnt++].z=Ji[i].z;
+	}
+	for(int i=0;i<XiaoNum;i++){
+		g_pos[cnt].x=Xiao[i].x*scale;
+		g_pos[cnt].y=Xiao[i].y*scale;
+		g_pos[cnt++].z=Xiao[i].z;
+	}
+	for(int i=0;i<YaNum;i++){
+		Ya[i].x+=1.0f;
+		g_pos[cnt].x=Ya[i].x*scale;
+		g_pos[cnt].y=Ya[i].y*scale;
+		g_pos[cnt++].z=Ya[i].z;
+	}
+	CMatrix044 mat;
+	for(int i=0;i<cnt;i++){
+		CVector044 dir;
+		float rotang=0;
+		int flag=0;
+		for(int j=0;j<22;j++){
+			if(i==point[j]){
+				flag=1;
+				dir=g_pos[i]-g_pos[(i+cnt-1)%cnt];
+				break;
+			}
+		}
+		if(flag==0){
+			dir=g_pos[(i+1)%cnt]-g_pos[i];
+		}
+		dir.Normalize();//方向
+		rotang=acos(dir.x);//dir与（1，0，0)点计算夹角
+		if(dir.y<0)rotang=-rotang;
+		mat.SetRotateByAxis(rotang,2);//设置为旋转矩阵
+		mat[12]=g_pos[i].x;
+		mat[13]=g_pos[i].y;
+		mat[14]=g_pos[i].z;
+		for(int j=0;j<CIRCLENUM;j++){
+			int index=i*CIRCLENUM+j;
+			g_allPos[index]=mat.MulPosition(g_circle[j]);
 		}
 	}
 }

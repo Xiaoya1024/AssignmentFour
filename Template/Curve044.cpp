@@ -151,7 +151,6 @@ void split(char *buffer,float*a){
 	}
 }
 void CCurve044::myCurvePrint(){
-	//？？？？？
 	char *txt[]={
 		"折线相交",
 		"点到折线距离",
